@@ -1,14 +1,13 @@
 import os
 import re
 from flask import Flask, jsonify, render_template, request, session, redirect, url_for, escape
+from sqlalchemy import create_engine
+
+engine = create_engine('sqlite:///:memory:')
 
 # Configure application
 app = Flask(__name__)
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
-
-# Configure CS50 Library to use SQLite database
-# db = SQL("sqlite:///mashup.db")
-
 
 # Ensure responses aren't cached
 @app.after_request
