@@ -33,8 +33,18 @@ def before_request():
 
 @app.route("/")
 def index():
-    
     return render_template("index.html")
+
+@app.route("/room")
+def room():
+    if request.method == "POST":
+        if not request.form.get("code"):
+            flash("Requires code to test")
+            return redirect("/room")
+
+        # launch docker container that evaluates this code
+
+    return render_template("room.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
