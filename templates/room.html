@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Code Room
+{% endblock %}
+
+{% block main %}
+    <form action="/room">
+    	<textarea name="code"></textarea>
+    	<button type="submit">Submit</button>
+    </form>
+{% endblock %}
