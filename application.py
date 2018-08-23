@@ -1,12 +1,16 @@
 import os
 import re
+import bcrypt
+import docker
+import random
+import string
 from flask import Flask, jsonify, flash, render_template, request, session, redirect, url_for, escape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.base import Base
 from models.user import User
-import bcrypt
 
+docker_client = docker.from_env()
 engine = create_engine('sqlite:///app.db', echo=True)
 Base.metadata.create_all(engine)
 DBSession = sessionmaker(engine)
@@ -35,14 +39,32 @@ def before_request():
 def index():
     return render_template("index.html")
 
-@app.route("/room")
+@app.route("/room", methods=["GET", "POST"])
 def room():
     if request.method == "POST":
         if not request.form.get("code"):
             flash("Requires code to test")
             return redirect("/room")
 
-        # launch docker container that evaluates this code
+        #random name for file
+        filename = ''.join(random.choices(string.ascii_uppercase, k=9)) + ".py"
+        dir_path = os.path.dirname(os.path.realpath(__file__)) + '/dangeroux'
+        #get tests
+        #TODO
+        test_args = ["hello", "world"]
+
+        #copy code into file
+        with open("./dangeroux/" + filename, "w") as f:
+            f.write(request.form.get("code"))
+
+        try:
+            #run code in docker container and hope its safe lol
+            #$ docker run -it --rm --name my-running-script -v "$PWD":/usr/src/myapp -w /usr/src/myapp python:3 python your-daemon-or-script.py
+            returned = docker_client.containers.run("python:3", ["python", filename, *test_args], volumes={ dir_path: {'bind': '/usr/src/app', 'mode': 'ro'}}, working_dir='/usr/src/app', remove=True)
+            print(returned)
+        finally:    
+            #delete code file
+            os.remove("./dangeroux/" + filename)
 
     return render_template("room.html")
 
@@ -75,8 +97,6 @@ def logout():
 def register():
 
     if request.method == "POST":
-        for element in request.form:
-            print(element)
         if not request.form.get("inputUsername1"):
             flash("Username required")
             return redirect("/register")
@@ -94,7 +114,6 @@ def register():
             return redirect("/register")
 
         exists = dbsession.query(User).filter(User.name == request.form.get("inputUsername1")).first()
-        print(exists)
         if exists:
             flash("Username already exists")
             return redirect("/register")
