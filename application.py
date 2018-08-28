@@ -4,7 +4,10 @@ import bcrypt
 import docker
 import random
 import string
+import datetime
+from time import sleep
 from flask import Flask, jsonify, flash, render_template, request, session, redirect, url_for, escape
+from flask_socketio import SocketIO
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.base import Base
@@ -21,6 +24,7 @@ dbsession.close()
 app = Flask(__name__)
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
 app.secret_key = os.environ["FLASK_SECRET"]
+socketio = SocketIO(app)
 
 # Ensure responses aren't cached
 @app.after_request
@@ -49,23 +53,49 @@ def room():
         #random name for file
         filename = ''.join(random.choices(string.ascii_uppercase, k=9)) + ".py"
         dir_path = os.path.dirname(os.path.realpath(__file__)) + '/dangeroux'
+        
         #get tests
         #TODO
         test_args = ["hello", "world"]
-
+        returned = b""
+        
         #copy code into file
         with open("./dangeroux/" + filename, "w") as f:
             f.write(request.form.get("code"))
 
         try:
             #run code in docker container and hope its safe lol
-            #$ docker run -it --rm --name my-running-script -v "$PWD":/usr/src/myapp -w /usr/src/myapp python:3 python your-daemon-or-script.py
-            returned = docker_client.containers.run("python:3", ["python", filename, *test_args], volumes={ dir_path: {'bind': '/usr/src/app', 'mode': 'ro'}}, working_dir='/usr/src/app', remove=True)
-            print(returned)
+            container = docker_client.containers.run("python:3",
+                                                    ["python", filename, *test_args],
+                                                    volumes={ dir_path: {'bind': '/usr/src/app', 'mode': 'ro'}},
+                                                    working_dir='/usr/src/app',
+                                                    detach=True,
+                                                    remove=True)
+
+            time_started = datetime.datetime.now()
+            time_to_kill = time_started + datetime.timedelta(seconds=5)
+
+            completed = False
+            while(datetime.datetime.now() < time_to_kill):
+                if not container.logs() == b"":
+                    completed = True
+                    break
+                sleep(0.1)
+
+            returned = container.logs()
+            
+            if not completed:
+                print("Program did not output in time")
+                container.stop(timeout=1)
+
+        except Exception as e:
+            print("Docker run failed!")
+            print(str(e))
         finally:    
             #delete code file
             os.remove("./dangeroux/" + filename)
 
+        flash(returned.decode('ascii'))
     return render_template("room.html")
 
 @app.route("/login", methods=["GET", "POST"])
@@ -129,3 +159,6 @@ def register():
         return redirect("/")
 
     return render_template("register.html")
+
+if __name__ == '__main__':
+    socketio.run(app)

@@ -3,3 +3,5 @@ flask_session
 sqlalchemy
 bcrypt
 docker
+flask-socketio
+eventlet
