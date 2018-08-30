@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Edit Problem
+{% endblock %}
+
+{% block main %}
+	<div class="row">
+		<p>Edit problem title/description or add tests here.</p>
+	</div>
+	<div class="row">
+		<form id="problem-form" action="/problems" method="POST">
+	    	<label for="title">Title</label>
+	    	<input type="text" name="title" id="title" value="{{problem.title}}">
+	    	<label for="description">Description</label>
+	    	<textarea name="description" id="description">{{problem.description}}</textarea>
+	    	<button type="submit">Submit</button>
+	    </form>
+	</div>
+    <div class="row">
+	    {% for test in problem.tests %}
+	    	<div class="test-div">
+	    		<form id="test-form-{{test.id}}">
+		    		<label for="input">Input</label>
+		    		<input type="text" name="input" value="{{test.input}}">
+		    		<label for="output">Output</label>
+		    		<input type="text" name="output" value="{{test.output}}">
+		    		<button onclick="updateTest({{test.id}})">Update</button>
+		    	</form>
+	    	</div>
+	    {% endfor %}
+	    <form id="test-form-add">
+	    	<label for="input">Input</label>
+	    	<input type="text" name="input" id="input">
+	    	<label for="output">Output</label>
+	    	<input type="text" name="output" id="output">
+	    	<button onclick="addTest()">Add Test</button>
+	    </form>
+	</div>
+	<script>
+		const problemId = {{problem.id}};
+
+		document.querySelectorAll("form").forEach(f => {
+			if(f.id != "problem-form"){
+				f.addEventListener("submit", function(e) { e.preventDefault() });
+			}
+		});
+
+		function updateTest(testId) {
+			const XHR = new XMLHttpRequest();
+			const form = document.getElementById("test-form-" + testId);
+			const fd = new FormData(form);
+			XHR.open("POST", "/problems/" + problemId + "/tests/" + testId);
+			XHR.send(fd);
+		}
+
+		function addTest() {
+			const XHR = new XMLHttpRequest();
+			const form = document.getElementById("test-form-add");
+			const fd = new FormData(form);
+			XHR.open("POST", "/problems/" + problemId + "/tests/new");
+			XHR.send(fd);
+		}
+
+	</script>
+{% endblock %}

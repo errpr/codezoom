@@ -12,6 +12,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.base import Base
 from models.user import User
+from models.problem import Problem 
+from models.test import Test
 
 docker_client = docker.from_env()
 engine = create_engine('sqlite:///app.db', echo=True)
@@ -45,6 +47,14 @@ def index():
 
 @app.route("/room", methods=["GET", "POST"])
 def room():
+    if not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()    
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
     if request.method == "POST":
         if not request.form.get("code"):
             flash("Requires code to test")
@@ -97,6 +107,117 @@ def room():
 
         flash(returned.decode('ascii'))
     return render_template("room.html")
+
+@app.route("/problems", methods=["GET", "POST"])
+def problems():
+    if not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
+    # Validate all the things
+    if request.method == "POST":
+        if not request.form.get("title"):
+            flash("Title is required")
+            return redirect("/problems")
+        if not request.form.get("description"):
+            flash("Description is required")
+            return redirect("/problems")
+        
+        new_problem = Problem(title=request.form.get("title"),
+                              description=request.form.get("description"),
+                              user_id=user.id)
+        
+        dbsession.add(new_problem)
+        dbsession.commit()
+        flash("New problem created successfully")
+        return redirect("/problems/" + str(new_problem.id))
+
+    return render_template("problems.html", user=user)
+
+@app.route("/problems/new")
+def problem_new():
+    if not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
+    return render_template("problem_new.html", user=user)
+
+@app.route("/problems/<int:problem_id>", methods=["GET", "POST"])
+def problem_edit(problem_id):
+    if not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
+    problem = dbsession.query(Problem).filter(Problem.id == problem_id).first()
+    if not problem.user_id == user.id:
+        return 403
+
+    if request.method == "POST":
+        if request.form.get("title"):
+            problem.title = request.form.get("title")
+        if request.form.get("description"):
+            problem.description = request.form.get("description")
+
+        dbsession.commit()
+
+    return render_template("problem_edit.html", user=user, problem=problem)
+
+# should only be called by XHR
+@app.route("/problems/<int:problem_id>/tests/<int:test_id>", methods=["POST"])
+def test_edit(problem_id, test_id):
+    if not session["user_id"]:
+        return "403 Forbidden"
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+
+    problem = dbsession.query(Problem).filter(Problem.id == problem_id).first()
+    if not problem.user_id == user.id:
+        return "403 Forbidden"
+
+    test = dbsession.query(Test).filter(Test.id == test_id).first()
+    if not test.problem_id == problem_id:
+        return "500 Something bad happened"
+
+    if request.form.get("input"):
+        test.input = request.form.get("input")
+
+    if request.form.get("output"):
+        test.output = request.form.get("output")
+
+    dbsession.commit()
+
+    return "200 OK"
+
+# should only be called by XHR
+@app.route("/problems/<int:problem_id>/tests/new", methods=["POST"])
+def test_create(problem_id):
+    if not session["user_id"]:
+        return "403 Forbidden"
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    problem = dbsession.query(Problem).filter(Problem.id == problem_id).first()
+    if not problem.user_id == user.id:
+        return "403 Forbidden"
+
+    new_test = Test(input=request.form.get("input"),
+                    output=request.form.get("output"),
+                    problem_id=problem.id)
+    dbsession.add(new_test)
+    dbsession.commit()
+
+    return str(new_test.id)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
