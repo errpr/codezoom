@@ -81,6 +81,7 @@ def room():
                                                     working_dir='/usr/src/app',
                                                     detach=True,
                                                     remove=True)
+            print(container)
 
             time_started = datetime.datetime.now()
             time_to_kill = time_started + datetime.timedelta(seconds=5)
@@ -90,8 +91,9 @@ def room():
                 if not container.logs() == b"":
                     completed = True
                     break
-                sleep(0.1)
 
+            print("container logs:")
+            print(container.logs())
             returned = container.logs()
             
             if not completed:
