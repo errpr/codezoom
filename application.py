@@ -14,6 +14,7 @@ from models.base import Base
 from models.user import User
 from models.problem import Problem 
 from models.test import Test
+# from models.run import Run
 
 docker_client = docker.from_env()
 engine = create_engine('sqlite:///app.db', echo=True)
@@ -60,55 +61,48 @@ def room():
             flash("Requires code to test")
             return redirect("/room")
 
-        #random name for file
-        filename = ''.join(random.choices(string.ascii_uppercase, k=9)) + ".py"
+        if not request.form.get("problem"):
+            flash("Requires problem to test")
+            return redirect("/room")
+
+        #get problem
+        problem = dbsession.query(Problem).filter(Problem.id == request.form.get("problem")).first()
+        if not problem:
+            flash("Problem not found")
+            return redirect("/room")
+
+        #random name for files and directory
+        file_id = ''.join(random.choices(string.ascii_uppercase, k=9))
+
+        runner_path = os.path.dirname(os.path.realpath(__file__)) + '/docker_stuff'
         dir_path = os.path.dirname(os.path.realpath(__file__)) + '/dangeroux'
-        
-        #get tests
-        #TODO
-        test_args = ["hello", "world"]
-        returned = b""
+
+        #copy tests into file
+        with open(dir_path + "/" + file_id + ".testfile", "w") as f:
+            for test in problem.tests:
+                f.write(test.input + " " + test.output + "\n")
         
         #copy code into file
-        with open("./dangeroux/" + filename, "w") as f:
+        with open(dir_path + "/" + file_id + ".py", "w") as f:
             f.write(request.form.get("code"))
 
-        try:
-            #run code in docker container and hope its safe lol
-            container = docker_client.containers.run("python:3",
-                                                    ["python", filename, *test_args],
-                                                    volumes={ dir_path: {'bind': '/usr/src/app', 'mode': 'ro'}},
-                                                    working_dir='/usr/src/app',
-                                                    detach=True,
-                                                    remove=True)
-            print(container)
-
-            time_started = datetime.datetime.now()
-            time_to_kill = time_started + datetime.timedelta(seconds=5)
-
-            completed = False
-            while(datetime.datetime.now() < time_to_kill):
-                if not container.logs() == b"":
-                    completed = True
-                    break
-
-            print("container logs:")
-            print(container.logs())
-            returned = container.logs()
-            
-            if not completed:
-                print("Program did not output in time")
-                container.stop(timeout=1)
-
-        except Exception as e:
-            print("Docker run failed!")
-            print(str(e))
-        finally:    
-            #delete code file
-            os.remove("./dangeroux/" + filename)
-
-        flash(returned.decode('ascii'))
+        #run code in docker container and hope its safe lol
+        c = docker_client.containers.run("errpr/pyrunner",
+                                     [file_id],
+                                     volumes={ dir_path: {'bind': '/usr/src/data', 'mode': 'ro'},
+                                               runner_path: {'bind': '/usr/src/app', 'mode': 'ro'}},
+                                     working_dir='/usr/src/app',
+                                     #detach=True,
+                                     remove=True)
+        print(c) 
+        return file_id
     return render_template("room.html")
+
+@app.route("/run_results/<string:run_id>", methods=["GET", "POST"])
+def run_results(run_id):
+    if request.method == "POST":
+        print(request.form)
+    return "Nope"
 
 @app.route("/problems", methods=["GET", "POST"])
 def problems():

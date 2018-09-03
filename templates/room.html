@@ -6,6 +6,7 @@
 
 {% block main %}
     <form action="/room" method="POST">
+        <input type="hidden" name="problem" value="1">
     	<textarea name="code"></textarea>
     	<button type="submit">Submit</button>
     </form>
