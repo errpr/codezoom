@@ -91,8 +91,9 @@ def room():
                                      [file_id],
                                      volumes={ dir_path: {'bind': '/usr/src/data', 'mode': 'ro'},
                                                runner_path: {'bind': '/usr/src/app', 'mode': 'ro'}},
-                                     working_dir='/usr/src/app',
-                                     #detach=True,
+                                     working_dir='/usr/src/data',
+                                     network_mode="host",
+                                     detach=True,
                                      remove=True)
         print(c) 
         return file_id
@@ -101,6 +102,7 @@ def room():
 @app.route("/run_results/<string:run_id>", methods=["GET", "POST"])
 def run_results(run_id):
     if request.method == "POST":
+        print("post received -----------------\n")
         print(request.form)
     return "Nope"
 
