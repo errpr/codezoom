@@ -5,6 +5,7 @@ import docker
 import random
 import string
 import datetime
+import json
 from time import sleep
 from flask import Flask, jsonify, flash, render_template, request, session, redirect, url_for, escape
 from flask_socketio import SocketIO
@@ -102,8 +103,10 @@ def room():
 @app.route("/run_results/<string:run_id>", methods=["GET", "POST"])
 def run_results(run_id):
     if request.method == "POST":
-        print("post received -----------------\n")
-        print(request.form)
+        print(request.json)
+        print(type(request.json))
+        results = json.JSONDecoder().decode(str(request.json))
+        print(results)
     return "Nope"
 
 @app.route("/problems", methods=["GET", "POST"])

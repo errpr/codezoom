@@ -5,6 +5,7 @@ import sys
 import os
 import subprocess
 import requests
+import json
 
 file_id = sys.argv[1]
 
@@ -33,5 +34,5 @@ for line in test_file:
   except subprocess.CalledProcessError as e:
     results.append([str(e), False])
 
-r = requests.post("http://127.0.0.1:5000/run_results/" + file_id, data={ 'data': results })
+r = requests.post("http://127.0.0.1:5000/run_results/" + file_id, json=json.JSONEncoder().encode(results))
 print(r)
