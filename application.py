@@ -132,6 +132,11 @@ def run_results(run_id):
 
         run.success_count = success_count
         dbsession.commit()
+
+        # clean up files
+        os.remove("./dangeroux/" + run_id + ".py")
+        os.remove("./dangeroux/" + run_id + ".testfile")
+
         return "0"
     
     #GET
