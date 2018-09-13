@@ -16,7 +16,6 @@ from models.user import User
 from models.problem import Problem 
 from models.test import Test
 from models.run import Run
-# from models.run import Run
 
 docker_client = docker.from_env()
 engine = create_engine('sqlite:///app.db', echo=True)
