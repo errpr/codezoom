@@ -56,10 +56,12 @@ def room():
         return redirect("/login")
 
     user = dbsession.query(User).filter(User.id == session["user_id"]).first()    
+    print("user acquired, maybe")
     if not user:
         session["user_id"] = None
         print("user_id in session but doesnt exist")
         return redirect("/login")
+    print("user is in session and exists")
 
     if request.method == "POST":
         print("request is a POST")
