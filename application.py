@@ -15,6 +15,7 @@ from models.base import Base
 from models.user import User
 from models.problem import Problem 
 from models.test import Test
+from models.run import Run
 # from models.run import Run
 
 docker_client = docker.from_env()
@@ -78,6 +79,10 @@ def room():
         runner_path = os.path.dirname(os.path.realpath(__file__)) + '/docker_stuff'
         dir_path = os.path.dirname(os.path.realpath(__file__)) + '/dangeroux'
 
+        #create run in database
+        run = Run(file_id=file_id, problem_id=problem.id)
+        dbsession.add(run)
+
         #copy tests into file
         with open(dir_path + "/" + file_id + ".testfile", "w") as f:
             for test in problem.tests:
@@ -89,25 +94,42 @@ def room():
 
         #run code in docker container and hope its safe lol
         c = docker_client.containers.run("errpr/pyrunner",
-                                     [file_id],
-                                     volumes={ dir_path: {'bind': '/usr/src/data', 'mode': 'ro'},
-                                               runner_path: {'bind': '/usr/src/app', 'mode': 'ro'}},
-                                     working_dir='/usr/src/data',
-                                     network_mode="host",
-                                     detach=True,
-                                     remove=True)
+                                         [file_id],
+                                         volumes={ dir_path: {'bind': '/usr/src/data', 'mode': 'ro'},
+                                                   runner_path: {'bind': '/usr/src/app', 'mode': 'ro'}},
+                                         working_dir='/usr/src/data',
+                                         network_mode="host",
+                                         detach=True,
+                                         remove=True)
         print(c) 
+        dbsession.commit()
         return file_id
     return render_template("room.html")
 
+#post results of runs here from the docker container
+#get results of runs here from the UI
 @app.route("/run_results/<string:run_id>", methods=["GET", "POST"])
 def run_results(run_id):
     if request.method == "POST":
-        print(request.json)
-        print(type(request.json))
         results = json.JSONDecoder().decode(str(request.json))
         print(results)
-    return "Nope"
+        run = dbsession.query(Run).filter(Run.file_id == run_id).first()
+        run.output = request.json
+
+        success_count = 0
+        for result in results:
+            if result[1]:
+                success_count += 1
+
+        run.success_count = success_count
+        dbsession.commit()
+        return "0"
+    
+    #GET
+    else:
+        run = dbsession.query(Run).filter(Run.file_id == run_id).first()
+
+        return json.JSONEncoder().encode({ "output": run.output, "success_count": run.success_count })
 
 @app.route("/problems", methods=["GET", "POST"])
 def problems():
