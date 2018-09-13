@@ -50,26 +50,36 @@ def index():
 
 @app.route("/room", methods=["GET", "POST"])
 def room():
+    print("room request")
+
     if not session["user_id"]:
+        print("user_id not in session")
         return redirect("/login")
 
     user = dbsession.query(User).filter(User.id == session["user_id"]).first()    
     if not user:
         session["user_id"] = None
+        print("user_id in session but doesnt exist")
         return redirect("/login")
 
     if request.method == "POST":
+        print("request is a POST")
+        print(request.form)
+        
         if not request.form.get("code"):
+            print("No code field")
             flash("Requires code to test")
             return redirect("/room")
 
         if not request.form.get("problem"):
+            print("No problem field")
             flash("Requires problem to test")
             return redirect("/room")
 
         #get problem
         problem = dbsession.query(Problem).filter(Problem.id == request.form.get("problem")).first()
         if not problem:
+            print("Problem not found")
             flash("Problem not found")
             return redirect("/room")
 
@@ -128,8 +138,10 @@ def run_results(run_id):
     #GET
     else:
         run = dbsession.query(Run).filter(Run.file_id == run_id).first()
+        if run.output:
+            return json.JSONEncoder().encode({ "output": run.output, "success_count": run.success_count })
+        return "0"
 
-        return json.JSONEncoder().encode({ "output": run.output, "success_count": run.success_count })
 
 @app.route("/problems", methods=["GET", "POST"])
 def problems():

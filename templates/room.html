@@ -5,9 +5,42 @@
 {% endblock %}
 
 {% block main %}
-    <form action="/room" method="POST">
+    <form action="/room" id="form" method="POST">
         <input type="hidden" name="problem" value="1">
     	<textarea name="code"></textarea>
     	<button type="submit">Submit</button>
     </form>
+
+    <script>
+    	const form = document.getElementById("form");
+
+    	function processResponse(run_id) {
+    		const req = new XMLHttpRequest();
+    		req.open('GET', '/run_results/' + run_id);
+    		req.onload = function() {
+    			if (this.responseText == "0") {
+    				setTimeout(function() { processResponse(run_id);
+    				}, 500);
+    			} else {
+    				processResult(this.responseText)
+    			}
+    		}
+    		req.send();
+    	}
+
+    	form.addEventListener("submit", function(e){
+    		e.preventDefault();
+    		
+    		const req = new XMLHttpRequest();
+    		const data = new FormData(form);
+
+    		req.open('POST', '/room', true);
+    		req.withCredentials = true;
+    		req.responseType = 'text';
+    		req.onload = function() {
+    			processResponse(this.responseText);
+    		}
+    		req.send(data)
+    	});
+    </script>
 {% endblock %}
