@@ -1,37 +1,91 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Register
+    Create a Room
 {% endblock %}
 
 {% block main %}
     <div class="jumbotron">
-        <h1>Welcome to the register page for App Name</h1>
-        <p>The number one user creation experience for App Name</p>
+        <h1>Create a Room</h1>
+        <p>Rooms contain a set of problems to test users' abilities.</p>
     </div>
     <div class="row">
         <div class="col-lg centered">
-            <p><small>
-                Already have an account?<br><a href="/login">Click here to log in.</a>
-            </small></p>
+            <button onclick="postProblems();" class="btn btn-primary">Submit</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg centered">
+            <!-- list of selected problems -->
+            <ul id="selected-problems" class="problems-list">
+            </ul>
         </div>
         <div class="col-lg centered">
-            <form method="POST" action="/register">
-                <div class="form-group">
-                    <label for="inputUsername1">Username</label>
-                    <input type="text" class="form-control" name="inputUsername1" id="inputUsername1" placeholder="Username">
-                </div>
-                <div class="form-group">
-                    <label for="inputPassword1">Password</label>
-                    <input type="password" class="form-control" name="inputPassword1" id="inputPassword1" placeholder="Password">
-                </div>
-                <div class="form-group">
-                    <label for="inputConfirm1">Confirm Password</label>
-                    <input type="password" class="form-control" name="inputConfirm1" id="inputConfirm1" placeholder="Confirm Password">
-                </div>
-                <button type="submit" class="btn btn-primary">Submit</button>
-            </form>
+            <div>
+                <h3>My Problems</h3>
+                <ul id="user-problems" class="problems-list">
+                    {% for problem in user_problems %}
+                    <li id="problem-{{problem.id}}" onclick="chooseProblem({{problem.id}});">{{ problem.title }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div>
+                <h3>Global Problems</h3>
+                <ul id="global-problems" class="problems-list">
+                    {% for problem in global_problems %}
+                    <li id="problem-{{problem.id}}" onclick="chooseProblem({{problem.id}});">{{ problem.title }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
-        <div class="col-lg"></div>
     </div>
+    <script>
+        const listOfProblems = [];
+
+        function chooseProblem(problemId) {
+            const problemElement = document.getElementById(`problem-${problemId}`);
+            problemElement.classList.add('selected-problem');
+
+            const selectedProblemElement = document.createElement("li");
+            selectedProblemElement.id = `selected-problem-${problemId}`;
+            selectedProblemElement.classList.add('selected-problem');
+            selectedProblemElement.addEventListener("click", function() { unchooseProblem(problemId); });
+            selectedProblemElement.innerText = problemElement.innerText;
+
+            document.getElementById("selected-problems").appendChild(selectedProblemElement);
+
+            listOfProblems.push(problemId);
+        }
+
+        function unchooseProblem(problemId) {
+            const problemElement = document.getElementById(`problem-${problemId}`);
+            problemElement.classList.remove('selected-problem');
+
+            const selectedProblemElement = document.getElementById(`selected-problem-${problemId}`);
+            selectedProblemElement.remove();
+
+            listOfProblems.splice(listOfProblems.indexOf(problemId), 1);
+        }
+
+        function postProblems() {
+            const req = new XMLHttpRequest();
+            const data = new FormData();
+
+            data.append('problems', listOfProblems);
+
+            req.open('POST', '/rooms', true);
+            req.withCredentials = true;
+            req.responseType = 'text';
+            req.onload = function() {
+                // @ROBUSTNESS this is a really dumb check
+                if(this.reponseText.length == 6) {
+                    window.location = `/room/${this.responseText}/admin`;
+                } else {
+                    // handle errors
+                }
+            }
+            req.send(data);
+        }
+
+    </script>
 {% endblock %}

@@ -47,40 +47,49 @@ def before_request():
 def index():
     return render_template("index.html")
 
-@app.route("/room", methods=["GET", "POST"])
-def room():
-    print("room request")
-
+@app.route("/rooms", methods=["GET", "POST"])
+def rooms():
     if not session["user_id"]:
-        print("user_id not in session")
         return redirect("/login")
 
-    user = dbsession.query(User).filter(User.id == session["user_id"]).first()    
-    print("user acquired, maybe")
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
     if not user:
         session["user_id"] = None
-        print("user_id in session but doesnt exist")
         return redirect("/login")
-    print("user is in session and exists")
 
     if request.method == "POST":
-        print("request is a POST")
+        # create the thing
         print(request.form)
-        
+        return "ABC123"
+
+    # GET
+    user_problems = dbsession.query(Problem).filter(Problem.user_id == user.id)
+    global_problems = dbsession.query(Problem).filter(Problem.user_id == 1)
+
+    return render_template("create_room.html", user_problems=user_problems, global_problems=global_problems)
+
+@app.route("/room", methods=["GET", "POST"])
+def room():
+    if not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
+    if request.method == "POST":
         if not request.form.get("code"):
-            print("No code field")
             flash("Requires code to test")
             return redirect("/room")
 
         if not request.form.get("problem"):
-            print("No problem field")
             flash("Requires problem to test")
             return redirect("/room")
 
         #get problem
         problem = dbsession.query(Problem).filter(Problem.id == request.form.get("problem")).first()
         if not problem:
-            print("Problem not found")
             flash("Problem not found")
             return redirect("/room")
 
@@ -258,7 +267,7 @@ def test_create(problem_id):
     dbsession.add(new_test)
     dbsession.commit()
 
-    return str(new_test.id)
+    return json.JSONEncoder().encode({"id": new_test.id, "input": new_test.input, "output": new_test.output})
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
