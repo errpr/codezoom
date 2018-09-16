@@ -49,7 +49,7 @@ def index():
 
 @app.route("/rooms", methods=["GET", "POST"])
 def rooms():
-    if not session["user_id"]:
+    if not session or not session["user_id"]:
         return redirect("/login")
 
     user = dbsession.query(User).filter(User.id == session["user_id"]).first()
@@ -70,7 +70,7 @@ def rooms():
 
 @app.route("/room", methods=["GET", "POST"])
 def room():
-    if not session["user_id"]:
+    if not session or not session["user_id"]:
         return redirect("/login")
 
     user = dbsession.query(User).filter(User.id == session["user_id"]).first()
@@ -160,7 +160,7 @@ def run_results(run_id):
 
 @app.route("/problems", methods=["GET", "POST"])
 def problems():
-    if not session["user_id"]:
+    if not session or not session["user_id"]:
         return redirect("/login")
 
     user = dbsession.query(User).filter(User.id == session["user_id"]).first()
@@ -190,7 +190,7 @@ def problems():
 
 @app.route("/problems/new")
 def problem_new():
-    if not session["user_id"]:
+    if not session or not session["user_id"]:
         return redirect("/login")
 
     user = dbsession.query(User).filter(User.id == session["user_id"]).first()
@@ -202,7 +202,7 @@ def problem_new():
 
 @app.route("/problems/<int:problem_id>", methods=["GET", "POST"])
 def problem_edit(problem_id):
-    if not session["user_id"]:
+    if not session or not session["user_id"]:
         return redirect("/login")
 
     user = dbsession.query(User).filter(User.id == session["user_id"]).first()
@@ -227,7 +227,7 @@ def problem_edit(problem_id):
 # should only be called by XHR
 @app.route("/problems/<int:problem_id>/tests/<int:test_id>", methods=["POST"])
 def test_edit(problem_id, test_id):
-    if not session["user_id"]:
+    if not session or not session["user_id"]:
         return "403 Forbidden"
 
     user = dbsession.query(User).filter(User.id == session["user_id"]).first()
@@ -253,7 +253,7 @@ def test_edit(problem_id, test_id):
 # should only be called by XHR
 @app.route("/problems/<int:problem_id>/tests/new", methods=["POST"])
 def test_create(problem_id):
-    if not session["user_id"]:
+    if not session or not session["user_id"]:
         return "403 Forbidden"
 
     user = dbsession.query(User).filter(User.id == session["user_id"]).first()

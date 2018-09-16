@@ -44,6 +44,9 @@
 
         function chooseProblem(problemId) {
             const problemElement = document.getElementById(`problem-${problemId}`);
+            if (problemElement.classList.contains('selected-problem')) {
+                return;
+            }
             problemElement.classList.add('selected-problem');
 
             const selectedProblemElement = document.createElement("li");

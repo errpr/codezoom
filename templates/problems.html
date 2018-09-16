@@ -5,14 +5,18 @@
 {% endblock %}
 
 {% block main %}
-	<div class="row">
-		<a href="/problems/new" class="btn btn-standard">Create a new Problem</a>
-		<h1>My Problems</h1>
-		{% for problem in user.problems %}
-			<div>
+	<div class="centered">
+		<a href="/problems/new" class="btn btn-primary">Create a new Problem</a><br>
+		<h1 style="margin-top: 1em;">My Problems</h1>
+	</div>
+	{% for problem in user.problems %}
+		<div class="row">
+			<div class="col-md-6 centered">
 				<h3>{{ problem.title }}</h3>
+			</div>
+			<div class="col-md-6 centered">
 				<a href="/problems/{{problem.id}}" class="btn btn-standard">Edit</a>
 			</div>
-		{% endfor %}
-	</div>
+		</div>
+	{% endfor %}
 {% endblock %}
