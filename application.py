@@ -16,6 +16,7 @@ from models.user import User
 from models.problem import Problem 
 from models.test import Test
 from models.run import Run
+from models.room import Room, RoomProblem
 
 docker_client = docker.from_env()
 engine = create_engine('sqlite:///app.db', echo=True)
@@ -29,6 +30,15 @@ app = Flask(__name__)
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
 app.secret_key = os.environ["FLASK_SECRET"]
 socketio = SocketIO(app)
+
+def generate_room_id(db):
+    possible_string = ''
+    while(True):
+        possible_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        room = db.query(Room).filter(Room.id == possible_string).first()
+        if not room:
+            break
+    return possible_string
 
 # Ensure responses aren't cached
 @app.after_request
@@ -58,15 +68,81 @@ def rooms():
         return redirect("/login")
 
     if request.method == "POST":
-        # create the thing
-        print(request.form)
-        return "ABC123"
+
+        if not request.form.get("problems"):
+            flash("Cannot create room without problems.")
+            return redirect("/rooms")
+
+        if not request.form.get("password"):
+            flash("Cannot create room without password.")
+            return redirect("/rooms")
+
+        room = Room(id=generate_room_id(dbsession),
+                    owner_id=session["user_id"],
+                    password=request.form.get("password"))
+        problem_ids = request.form.get("problems").split(",")
+        for index, problem_id in enumerate(problem_ids):
+            rp = RoomProblem(order_id=index)
+            rp.problem = dbsession.query(Problem).filter(Problem.id == problem_id).first()
+            dbsession.add(rp)
+            room.problems.append(rp)
+
+        dbsession.add(room)
+        print(room)
+        return redirect("/rooms/" + room.id + "/admin")
 
     # GET
     user_problems = dbsession.query(Problem).filter(Problem.user_id == user.id)
     global_problems = dbsession.query(Problem).filter(Problem.user_id == 1)
 
     return render_template("create_room.html", user_problems=user_problems, global_problems=global_problems)
+
+
+@app.route("/rooms/<string:room_id>")
+def room_base(room_id):
+    if not session or not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
+    room = dbsession.query(Room).filter(Room.id == room_id).first()
+    return render_template("room_base.html", room=room)
+
+
+@app.route("/rooms/<string:room_id>/admin")
+def room_admin(room_id):
+    if not session or not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
+    room = dbsession.query(Room).filter(Room.id == room_id).first()
+    
+    if not room.owner_id == user.id:
+        return redirect("/rooms/" + str(room_id))
+    return render_template("room_admin.html", room=room)
+
+
+@app.route("/rooms/<string:room_id>/<int:problem_order_id>")
+def room_problem(room_id, problem_order_id):
+    if not session or not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
+    room = dbsession.query(Room).filter(Room.id == room_id).first()
+    problem = room.problems[problem_order_id]
+    return render_template("room_problem.html", room=room, problem=problem)
+
 
 @app.route("/room", methods=["GET", "POST"])
 def room():

@@ -9,12 +9,18 @@
 		<p>Enter a title and a clear description of the problem to be solved.</p>
 	</div>
 	<div class="row">
-		<form action="/problems" method="POST">
-	    	<label for="title">Title</label>
-	    	<input type="text" name="title" id="title">
-	    	<label for="description">Description</label>
-	    	<textarea name="description" id="description"></textarea>
-	    	<button type="submit">Submit</button>
-	    </form>
+		<div class="col-md-6">
+			<form action="/problems" method="POST">
+				<div class="form-group">
+		    		<label for="title">Title</label>
+		    		<input class="form-control" type="text" name="title" id="title">
+		    	</div>
+		    	<div class="form-group">
+		    		<label for="description">Description</label>
+		    		<textarea class="form-control" name="description" id="description"></textarea>
+		    	</div>
+		    	<button class="btn btn-primary" type="submit">Submit</button>
+		    </form>
+		</div>
 	</div>
 {% endblock %}
