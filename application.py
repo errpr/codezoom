@@ -158,6 +158,7 @@ def room_problem(room_id, problem_order_id):
     return render_template("room_problem.html", room=room, problem=problem)
 
 
+# DEPRECATED AS HECK
 @app.route("/room", methods=["GET", "POST"])
 def room():
     if not session or not session["user_id"]:

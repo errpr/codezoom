@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Code Room
+{% endblock %}
+
+{% block main %}
+    <div class="row">
+        <div class="col-lg">
+            <h1>{{problem.title}}</h1>
+            <p>{{problem.description}}</p>
+        </div>
+    </div>
+
+    <div class="row">
+    	<pre id="editor">
+    	</pre>
+    </div>
+
+    <div class="row">
+    	<button onclick="postCode()" class="btn btn-primary" type="submit">Submit</button>
+    </div>
+
+	<script src="/static/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script>
+		const editor = ace.edit("editor");
+		editor.setTheme("ace/theme/textmate");
+		editor.session.setMode("ace/mode/python");
+
+		const form = document.getElementById("form");
+		
+		function processResult(json) {
+			console.log(json);
+		}
+
+    	function processResponse(run_id) {
+    		const req = new XMLHttpRequest();
+    		req.open('GET', '/run_results/' + run_id);
+    		req.onload = function() {
+    			if (this.responseText == "0") {
+    				setTimeout(function() { processResponse(run_id);
+    				}, 500);
+    			} else {
+    				processResult(this.responseText);
+    			}
+    		}
+    		req.send();
+    	}
+
+    	function postCode() {
+    		const req = new XMLHttpRequest();
+    		const data = new FormData(form);
+			
+			data.append('code', editor.getValue());
+
+    		req.open('POST', window.location, true);
+    		req.withCredentials = true;
+    		req.responseType = 'text';
+    		req.onload = function() {
+    			processResponse(this.responseText);
+    		}
+    		req.send(data);
+    	};
+    </script>
+{% endblock %}
