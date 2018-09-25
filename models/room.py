@@ -22,6 +22,7 @@ class Room(Base):
 
     owner = relationship("User", back_populates="rooms")
     problems = relationship("RoomProblem", order_by=RoomProblem.order_id)
-
+    runs = relationship("Run")
+    
     def __repr__(self):
         return "<Room(id='{}', owner_id='{}', time_created='{}', time_updated='{}')>".format(self.id, self.owner_id, self.time_created, self.time_updated)

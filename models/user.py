@@ -17,6 +17,7 @@ class User(Base):
 
     rooms = relationship("Room", back_populates="owner")
     problems = relationship("Problem", order_by=Problem.id, back_populates="user")
+    runs = relationship("Runs", back_populates="user")
 
     def __repr__(self):
         return "<User(name='{}', fullname='{}', pw_hash='{}')>".format(self.name, self.fullname, self.password)

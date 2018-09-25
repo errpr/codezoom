@@ -129,6 +129,20 @@ def room_admin(room_id):
     return render_template("room_admin.html", room=room)
 
 
+@app.route("/rooms/<string:room_id>/complete")
+def room_complete(room_id):
+    if not session or not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
+    room = dbsession.query(Room).filter(Room.id == room_id).first()
+    return render_template("room_complete.html", room=room)
+
+
 @app.route("/rooms/<string:room_id>/<int:problem_order_id>")
 def room_problem(room_id, problem_order_id):
     if not session or not session["user_id"]:
