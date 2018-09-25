@@ -8,3 +8,15 @@
     height: 300px;
     width: 80%;
 }
+
+#selected-problems {
+    text-align: left;
+}
+
+#selected-problems li {
+    margin: 1em;
+}
+
+.li-btn {
+    margin-left: 1em;
+}

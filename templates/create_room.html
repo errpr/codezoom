@@ -17,8 +17,8 @@
     <div class="row">
         <div class="col-lg centered">
             <!-- list of selected problems -->
-            <ul id="selected-problems" class="problems-list">
-            </ul>
+            <ol id="selected-problems" class="problems-list">
+            </ol>
         </div>
         <div class="col-lg centered">
             <div>
@@ -42,6 +42,32 @@
     <script>
         const listOfProblems = [];
 
+        function moveProblemUp(problemId) {
+            const index = listOfProblems.indexOf(problemId);
+            if(index === 0) { return; }
+            arrayMove(listOfProblems, index, index - 1);
+
+            // move the dom element up
+            const el = document.getElementById(`selected-problem-${problemId}`);
+            el.parentElement.insertBefore(el, el.previousElementSibling);
+        }
+
+        function moveProblemDown(problemId) {
+            const index = listOfProblems.indexOf(problemId);
+            if (index === listOfProblems.length - 1) { return; }
+            arrayMove(listOfProblems, index, index + 1);
+
+            // move the dom element down
+            const el = document.getElementById(`selected-problem-${problemId}`);
+            el.parentElement.insertBefore(el.nextElementSibling, el);
+        }
+
+        function arrayMove(arr, fromIndex, toIndex) {
+            const element = arr[fromIndex];
+            arr.splice(fromIndex, 1);
+            arr.splice(toIndex, 0, element);
+        }
+
         function chooseProblem(problemId) {
             const problemElement = document.getElementById(`problem-${problemId}`);
             if (problemElement.classList.contains('selected-problem')) {
@@ -52,8 +78,31 @@
             const selectedProblemElement = document.createElement("li");
             selectedProblemElement.id = `selected-problem-${problemId}`;
             selectedProblemElement.classList.add('selected-problem');
-            selectedProblemElement.addEventListener("click", function() { unchooseProblem(problemId); });
             selectedProblemElement.innerText = problemElement.innerText;
+
+            const buttonContainer = document.createElement("div");
+            buttonContainer.classList.add('button-container');
+
+            const unchooseButton = document.createElement("button");
+            unchooseButton.addEventListener("click", function() { unchooseProblem(problemId); });
+            unchooseButton.classList = 'btn btn-danger li-btn';
+            unchooseButton.innerText = "X";
+
+            const moveProblemUpButton = document.createElement("button");
+            moveProblemUpButton.addEventListener("click", function() { moveProblemUp(problemId); });
+            moveProblemUpButton.classList = 'btn btn-primary li-btn';
+            moveProblemUpButton.innerHTML = "&#x25B2;";
+
+            const moveProblemDownButton = document.createElement("button");
+            moveProblemDownButton.addEventListener("click", function() { moveProblemDown(problemId); });
+            moveProblemDownButton.classList = 'btn btn-primary li-btn';
+            moveProblemDownButton.innerHTML = "&#x25BC;";
+
+            buttonContainer.appendChild(unchooseButton);
+            buttonContainer.appendChild(moveProblemUpButton);
+            buttonContainer.appendChild(moveProblemDownButton);
+
+            selectedProblemElement.appendChild(buttonContainer);
 
             document.getElementById("selected-problems").appendChild(selectedProblemElement);
 
@@ -81,7 +130,7 @@
             req.responseType = 'text';
             req.onload = function() {
                 // @ROBUSTNESS this is a really dumb check
-                if(this.reponseText.length == 6) {
+                if(this.responseText.length == 6) {
                     window.location = `/room/${this.responseText}/admin`;
                 } else {
                     // handle errors
