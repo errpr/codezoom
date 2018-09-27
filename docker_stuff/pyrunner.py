@@ -20,13 +20,13 @@ for line in test_file:
   if line == '' or line == '\n':
     continue
 
-  line2 = line.split(' ')
+  line2 = line.split("\uFFFF")
   inpt = line2[0]
   outpt = line2[1]
 
   try:
     returned = subprocess.run(["python3", file_id + ".py", inpt], stdout=subprocess.PIPE, timeout=5, check=True)
-    results.append([returned.stdout.decode('ascii'), returned.stdout.decode('ascii').rstrip() == outpt])
+    results.append([returned.stdout.decode('ascii').rstrip(), returned.stdout.decode('ascii').rstrip() == outpt])
 
   except subprocess.TimeoutExpired:
     results.append(["dnf", False])

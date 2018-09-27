@@ -135,7 +135,7 @@
             req.onload = function() {
                 // @ROBUSTNESS this is a really dumb check
                 if(this.responseText.length == 6) {
-                    window.location = `/room/${this.responseText}/admin`;
+                    window.location = `/rooms/${this.responseText}/admin`;
                 } else {
                     // handle errors
                 }

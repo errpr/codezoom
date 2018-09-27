@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Table
 from sqlalchemy.orm import relationship
 from models.base import Base
-from models.problem import Problem
+from models.run import Run
 from sqlalchemy.sql import func
 
 class RoomProblem(Base):
@@ -20,9 +20,8 @@ class Room(Base):
     time_updated = Column(DateTime(timezone=True), onupdate=func.now())
     password = Column(String)
 
-    owner = relationship("User", back_populates="rooms")
     problems = relationship("RoomProblem", order_by=RoomProblem.order_id)
-    runs = relationship("Run")
+    runs = relationship("Run", backref="room")
     
     def __repr__(self):
         return "<Room(id='{}', owner_id='{}', time_created='{}', time_updated='{}')>".format(self.id, self.owner_id, self.time_created, self.time_updated)

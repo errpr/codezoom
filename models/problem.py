@@ -14,7 +14,6 @@ class Problem(Base):
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     time_updated = Column(DateTime(timezone=True), onupdate=func.now())
 
-    user = relationship("User", back_populates="problems")
     tests = relationship("Test", order_by=Test.id, back_populates="problem")
 
     def __repr__(self):

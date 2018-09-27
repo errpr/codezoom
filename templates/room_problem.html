@@ -26,8 +26,6 @@
 		const editor = ace.edit("editor");
 		editor.setTheme("ace/theme/textmate");
 		editor.session.setMode("ace/mode/python");
-
-		const form = document.getElementById("form");
 		
 		function processResult(json) {
 			console.log(json);
@@ -49,7 +47,7 @@
 
     	function postCode() {
     		const req = new XMLHttpRequest();
-    		const data = new FormData(form);
+    		const data = new FormData();
 			
 			data.append('code', editor.getValue());
 

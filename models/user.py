@@ -1,8 +1,9 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from models.base import Base
-from models.problem import Problem
 from models.room import Room
+from models.run import Run
+from models.problem import Problem
 from sqlalchemy.sql import func
 
 class User(Base):
@@ -15,9 +16,9 @@ class User(Base):
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     time_updated = Column(DateTime(timezone=True), onupdate=func.now())
 
-    rooms = relationship("Room", back_populates="owner")
-    problems = relationship("Problem", order_by=Problem.id, back_populates="user")
-    runs = relationship("Runs", back_populates="user")
+    rooms = relationship("Room", backref="owner")
+    runs = relationship("Run", backref="user")
+    problems = relationship("Problem", backref="user")
 
     def __repr__(self):
         return "<User(name='{}', fullname='{}', pw_hash='{}')>".format(self.name, self.fullname, self.password)

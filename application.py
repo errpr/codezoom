@@ -6,11 +6,13 @@ import random
 import string
 import datetime
 import json
+
 from time import sleep
 from flask import Flask, jsonify, flash, render_template, request, session, redirect, url_for, escape
 from flask_socketio import SocketIO
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from models.base import Base
 from models.user import User
 from models.problem import Problem 
@@ -82,14 +84,14 @@ def rooms():
                     password=request.form.get("password"))
         problem_ids = request.form.get("problems").split(",")
         for index, problem_id in enumerate(problem_ids):
-            rp = RoomProblem(order_id=index)
-            rp.problem = dbsession.query(Problem).filter(Problem.id == problem_id).first()
+            rp = RoomProblem(room_id=room.id, problem_id=problem_id, order_id=index)
             dbsession.add(rp)
             room.problems.append(rp)
 
         dbsession.add(room)
+        dbsession.commit()
         print(room)
-        return redirect("/rooms/" + room.id + "/admin")
+        return room.id
 
     # GET
     user_problems = dbsession.query(Problem).filter(Problem.user_id == user.id)
@@ -109,6 +111,10 @@ def room_base(room_id):
         return redirect("/login")
 
     room = dbsession.query(Room).filter(Room.id == room_id).first()
+    if not room:
+        flash("Room not found")
+        return redirect("/")
+
     return render_template("room_base.html", room=room)
 
 
@@ -123,7 +129,10 @@ def room_admin(room_id):
         return redirect("/login")
 
     room = dbsession.query(Room).filter(Room.id == room_id).first()
-    
+    if not room:
+        flash("Room not found")
+        return redirect("/")
+
     if not room.owner_id == user.id:
         return redirect("/rooms/" + str(room_id))
     return render_template("room_admin.html", room=room)
@@ -140,10 +149,14 @@ def room_complete(room_id):
         return redirect("/login")
 
     room = dbsession.query(Room).filter(Room.id == room_id).first()
+    if not room:
+        flash("Room not found")
+        return redirect("/")
+
     return render_template("room_complete.html", room=room)
 
 
-@app.route("/rooms/<string:room_id>/<int:problem_order_id>")
+@app.route("/rooms/<string:room_id>/<int:problem_order_id>", methods=["GET", "POST"])
 def room_problem(room_id, problem_order_id):
     if not session or not session["user_id"]:
         return redirect("/login")
@@ -154,35 +167,19 @@ def room_problem(room_id, problem_order_id):
         return redirect("/login")
 
     room = dbsession.query(Room).filter(Room.id == room_id).first()
-    problem = room.problems[problem_order_id]
-    return render_template("room_problem.html", room=room, problem=problem)
+    if not room:
+        flash("Room not found")
+        return redirect("/")
 
-
-# DEPRECATED AS HECK
-@app.route("/room", methods=["GET", "POST"])
-def room():
-    if not session or not session["user_id"]:
-        return redirect("/login")
-
-    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
-    if not user:
-        session["user_id"] = None
-        return redirect("/login")
+    problem = room.problems[problem_order_id].problem
+    if not problem:
+        flash("Problem not found")
+        return redirect("/rooms/" + room.id)
 
     if request.method == "POST":
         if not request.form.get("code"):
             flash("Requires code to test")
-            return redirect("/room")
-
-        if not request.form.get("problem"):
-            flash("Requires problem to test")
-            return redirect("/room")
-
-        #get problem
-        problem = dbsession.query(Problem).filter(Problem.id == request.form.get("problem")).first()
-        if not problem:
-            flash("Problem not found")
-            return redirect("/room")
+            return redirect("/rooms")
 
         #random name for files and directory
         file_id = ''.join(random.choices(string.ascii_uppercase, k=9))
@@ -197,7 +194,7 @@ def room():
         #copy tests into file
         with open(dir_path + "/" + file_id + ".testfile", "w") as f:
             for test in problem.tests:
-                f.write(test.input + " " + test.output + "\n")
+                f.write(test.input + "\uFFFF" + test.output + "\n")
         
         #copy code into file
         with open(dir_path + "/" + file_id + ".py", "w") as f:
@@ -215,7 +212,9 @@ def room():
         print(c) 
         dbsession.commit()
         return file_id
-    return render_template("room.html")
+
+    #GET
+    return render_template("room_problem.html", room=room, problem=problem)
 
 #post results of runs here from the docker container
 #get results of runs here from the UI
