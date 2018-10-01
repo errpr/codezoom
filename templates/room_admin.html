@@ -10,5 +10,18 @@
         <p>Nothing here yet</p>
     </div>
     <div class="row">
+        <pre id="spam">
+
+        </pre>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = socket.io();
+        socket.on('connection', function(socket) {
+            socket.join('{{room.id}}');
+        });
+        socket.on('update_room', function(data) {
+            document.getElementById("spam").innerText += JSON.stringify(data, null, true);
+        });
+    </script>
 {% endblock %}

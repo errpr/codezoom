@@ -47,6 +47,9 @@ if not dbsession.query(User).first():
 
 dbsession.close()
 
+# @ROBUSTNESS this is language specific to python and a hack
+DEFAULT_CODE = "import sys\n\n# print out first command line argument\nprint(sys.argv[1])"
+
 # Configure application
 app = Flask(__name__)
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
@@ -197,6 +200,11 @@ def room_problem(room_id, problem_order_id):
         flash("Problem not found")
         return redirect("/rooms/" + room.id)
 
+    # next_id used in UI to link to the next problem
+    next_id = problem_order_id + 1
+    if len(room.problems) <= next_id:
+        next_id = "complete"
+
     if request.method == "POST":
         if not request.form.get("code"):
             flash("Requires code to test")
@@ -217,10 +225,12 @@ def room_problem(room_id, problem_order_id):
             for test in problem.tests:
                 f.write(test.input + "\uFFFF" + test.output + "\n")
         
+        # @ROBUSTNESS this shouldn't be hardcoded to run python
         #copy code into file
         with open(dir_path + "/" + file_id + ".py", "w") as f:
             f.write(request.form.get("code"))
 
+        # @ROBUSTNESS this shouldn't be hardcoded to run python
         #run code in docker container and hope its safe lol
         c = docker_client.containers.run("errpr/pyrunner",
                                          [file_id],
@@ -234,7 +244,12 @@ def room_problem(room_id, problem_order_id):
         return file_id
 
     #GET
-    return render_template("room_problem.html", room=room, problem=problem)
+    return render_template("room_problem.html", 
+                            room=room, 
+                            problem=problem, 
+                            next_id=next_id, 
+                            code_prefill=DEFAULT_CODE, 
+                            code_length=len(DEFAULT_CODE))
 
 #post results of runs here from the docker container
 #get results of runs here from the UI
@@ -263,6 +278,16 @@ def run_results(run_id):
         # clean up files
         os.remove("./dangeroux/" + run_id + ".py")
         os.remove("./dangeroux/" + run_id + ".testfile")
+
+        socketio.emit(  
+            'update_room', 
+            json.JSONEncoder().encode({
+                "user": run.user.name,
+                "success_count": run.success_count,
+                "full_success": run.successful
+            }),
+            room=run.room.id
+        )
 
         return "0"
     
@@ -449,5 +474,36 @@ def register():
 
     return render_template("register.html")
 
+
+@socketio.on('join_room')
+def on_join(data):
+    db = DBSession()
+    user = db.query(User).filter(User.id == session['user_id']).first()
+    if not user:
+        return
+
+    room_id = data['room']
+    room = db.query(Room).filter(Room.id == room_id).first()
+    if not room:
+        return
+    
+    if not room.owner.id == user.id:
+        return
+
+    join_room(room_id)
+    send(username + ' has entered the room.', room=room)
+
+@socketio.on('leave_room')
+def on_leave(data):
+    db = DBSession()
+    user = db.query(User).filter(User.id == session['user_id']).first()
+    if not user:
+        return
+
+    room_id = data['room']
+    leave_room(room_id)
+    send(username + ' has left the room.', room=room)
+
 if __name__ == '__main__':
+    print("DOES THIS WORK??????????????????????????")
     socketio.run(app)

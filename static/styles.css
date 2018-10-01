@@ -20,3 +20,11 @@
 .li-btn {
     margin-left: 1em;
 }
+
+.no-display {
+    display: none;
+}
+
+.success {
+    color: green;
+}
