@@ -16,7 +16,6 @@ test_file = test_file.split('\n')
 results = []
 
 for line in test_file:
-  print(line)
   if line == '' or line == '\n':
     continue
 
@@ -25,14 +24,13 @@ for line in test_file:
   outpt = line2[1]
 
   try:
-    returned = subprocess.run(["python3", file_id + ".py", inpt], stdout=subprocess.PIPE, timeout=5, check=True)
+    returned = subprocess.run(["python3", file_id + ".py", inpt], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5, check=True)
     results.append([returned.stdout.decode('ascii').rstrip(), returned.stdout.decode('ascii').rstrip() == outpt])
 
   except subprocess.TimeoutExpired:
     results.append(["dnf", False])
 
   except subprocess.CalledProcessError as e:
-    results.append([str(e), False])
+    results.append(["Process failure:\n" + e.stderr.decode('ascii'), False])
 
 r = requests.post("http://127.0.0.1:5000/run_results/" + file_id, json=json.JSONEncoder().encode(results))
-print(r)
