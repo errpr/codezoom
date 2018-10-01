@@ -25,6 +25,26 @@ engine = create_engine('sqlite:///app.db', echo=True)
 Base.metadata.create_all(engine)
 DBSession = sessionmaker(engine)
 dbsession = DBSession()
+
+# PUT FIXTURES HERE
+# Apply fixtures if db is empty
+if not dbsession.query(User).first():
+    print("EMPTY DB DETECTED - APPLYING FIXTURES")
+    global_problems_user = User(name="global", pw_hash=bcrypt.hashpw(os.environ['CODEZOOM_GLOBAL_USER_PW'].encode('ascii'), bcrypt.gensalt()))
+    global_problems_user.problems = [
+        Problem(
+            title="Reverse a string", 
+            description="String goes STDIN, string comes STDOUT reversed, you can't explain that!",
+            tests=[
+                Test(input="Hello", output="olleH"),
+                Test(input="World", output="dlroW"),
+                Test(input="Hello world!", output="!dlrow olleH")
+            ]
+        )
+    ]
+    dbsession.add(global_problems_user)
+    dbsession.commit()
+
 dbsession.close()
 
 # Configure application
@@ -101,6 +121,7 @@ def rooms():
 
 
 @app.route("/rooms/<string:room_id>")
+@app.route("/rooms/<string:room_id>/")
 def room_base(room_id):
     if not session or not session["user_id"]:
         return redirect("/login")
@@ -188,7 +209,7 @@ def room_problem(room_id, problem_order_id):
         dir_path = os.path.dirname(os.path.realpath(__file__)) + '/dangeroux'
 
         #create run in database
-        run = Run(file_id=file_id, problem_id=problem.id)
+        run = Run(file_id=file_id, problem_id=problem.id, code=request.form.get("code"))
         dbsession.add(run)
 
         #copy tests into file
@@ -209,7 +230,6 @@ def room_problem(room_id, problem_order_id):
                                          network_mode="host",
                                          detach=True,
                                          remove=True)
-        print(c) 
         dbsession.commit()
         return file_id
 
@@ -282,7 +302,8 @@ def problems():
         dbsession.commit()
         flash("New problem created successfully")
         return redirect("/problems/" + str(new_problem.id))
-
+    
+    #GET
     return render_template("problems.html", user=user)
 
 @app.route("/problems/new")

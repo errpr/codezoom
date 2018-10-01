@@ -8,6 +8,7 @@ class Run(Base):
 
     id = Column(Integer, primary_key=True)
     file_id = Column(String, nullable=False)
+    code = Column(String, nullable=False)
     output = Column(String)
     success_count = Column(Integer)
     successful = Column(Boolean)
