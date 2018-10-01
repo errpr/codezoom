@@ -231,7 +231,13 @@ def run_results(run_id):
             if result[1]:
                 success_count += 1
 
+        # honestly the only way I can think of to count children :|
+        test_count = 0
+        for test in run.problem.tests:
+            test_count += 1
+
         run.success_count = success_count
+        run.successful = success_count == test_count
         dbsession.commit()
 
         # clean up files
@@ -243,8 +249,9 @@ def run_results(run_id):
     #GET
     else:
         run = dbsession.query(Run).filter(Run.file_id == run_id).first()
+
         if run.output:
-            return json.JSONEncoder().encode({ "output": run.output, "success_count": run.success_count })
+            return json.JSONEncoder().encode({ "output": run.output, "success_count": run.success_count, "full_success": run.successful })
         return "0"
 
 
