@@ -80,8 +80,20 @@ def before_request():
 def index():
     return render_template("index.html")
 
-@app.route("/rooms", methods=["GET", "POST"])
+@app.route("/rooms")
 def rooms():
+    if not session or not session["user_id"]:
+        return redirect("/login")
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return redirect("/login")
+
+    return render_template("room_index.html", user=user)
+
+@app.route("/rooms/new", methods=["GET", "POST"])
+def room_new():
     if not session or not session["user_id"]:
         return redirect("/login")
 
@@ -118,7 +130,7 @@ def rooms():
     user_problems = dbsession.query(Problem).filter(Problem.user_id == user.id)
     global_problems = dbsession.query(Problem).filter(Problem.user_id == 1)
 
-    return render_template("create_room.html", user_problems=user_problems, global_problems=global_problems)
+    return render_template("room_new.html", user_problems=user_problems, global_problems=global_problems)
 
 
 @app.route("/rooms/<string:room_id>")
@@ -377,7 +389,7 @@ def problems():
         return redirect("/problems/" + str(new_problem.id))
     
     #GET
-    return render_template("problems.html", user=user)
+    return render_template("problem_index.html", user=user)
 
 @app.route("/problems/new")
 def problem_new():

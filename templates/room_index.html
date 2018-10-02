@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    My Rooms
+{% endblock %}
+
+{% block main %}
+	<div class="centered">
+		<a href="/rooms/new" class="btn btn-primary">Create a new Room</a><br>
+		<h1 style="margin-top: 1em;">My Rooms</h1>
+	</div>
+	{% for room in user.rooms %}
+		<div class="row">
+			<div class="col-md-6 centered">
+				<h3>Room: {{ room.id }}</h3>
+				<small>Created {{ room.time_created }}</small>
+			</div>
+			<div class="col-md-6 centered">
+				<a href="/rooms/{{room.id}}/admin" class="btn btn-standard">Admin Panel</a>
+			</div>
+		</div>
+	{% endfor %}
+{% endblock %}

@@ -6,7 +6,18 @@
 
 {% block main %}
     <div class="jumbotron">
-        <h1>Welcome to App Name</h1>
-        <p>The number one app for App Purpose</p>
+        <h1>Welcome to <strong>code</strong>zoom</h1>
+        <p>Here you can build, administer, and take code quizzes.</p>
     </div>
+    <div class="row">
+    	<h2>Join a room</h2>
+    	<input class="form-control" type=text name="room_id" id="room_id" placeholder="Room ID">
+    	<button class="btn btn-primary" onclick="joinRoom()">Join</button>
+    </div>
+    <script>
+    	function joinRoom() {
+    		const roomId = document.getElementById("room_id").value;
+    		window.location = `/rooms/${roomId}`;
+    	}
+    </script>
 {% endblock %}

@@ -27,7 +27,7 @@
                 const user = results.user_list[i];
                 const uDiv = document.createElement("div");
                 uDiv.classList = "results-user";
-                uDiv.innerText = user;
+                uDiv.innerHTML = `<span class="results-user-name">${user}</span>`;
                 
                 for(let j in results[user].problem_list) {
                     // technically unnecessary because the index into problem_list happens to be the same as the problem_id
