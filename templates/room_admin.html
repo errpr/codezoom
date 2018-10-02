@@ -9,12 +9,44 @@
         <h1>Admin area!</h1>
         <p>Nothing here yet</p>
     </div>
-    <div class="row">
-        <pre id="spam">
-
-        </pre>
+    <div class="row" id="results">
     </div>
     <script>
+        function pollResults() {
+            fetch("/room_results/{{room.id}}", {
+                credentials: "same-origin"
+            }).then(res => res.ok ? res.json() : {})
+            .then(json => processResults(json));
+            setTimeout(pollResults, 4000);
+        }
         
+        function processResults(results) {
+            const div = document.getElementById('results');
+            div.innerHTML = "";
+            for(let i in results.user_list) {
+                const user = results.user_list[i];
+                const uDiv = document.createElement("div");
+                uDiv.classList = "results-user";
+                uDiv.innerText = user;
+                
+                for(let j in results[user].problem_list) {
+                    // technically unnecessary because the index into problem_list happens to be the same as the problem_id
+                    const problem = results[user].problem_list[j];
+
+                    const pDiv = document.createElement("div");
+                    pDiv.classList = `results-problem${results[user][problem].successful ? " success" : ""}`;
+                    pDiv.innerText = problem;
+                    uDiv.appendChild(pDiv);
+                }
+
+                div.appendChild(uDiv);
+            }
+        }
+
+        if (document.readyState !== 'loading') {
+            pollResults();
+        } else {
+            document.addEventListener('DOMContentLoaded', pollResults);
+        }
     </script>
 {% endblock %}

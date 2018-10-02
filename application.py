@@ -313,7 +313,7 @@ def room_results(room_id):
 
     # create a map of each user to their
     # most recent runs for each problem
-    user_run_map = {}
+    user_run_map = { 'user_list': [] }
     query = dbsession.query(Run, func.max(Run.time_created)).filter(Run.room_id == room.id).group_by(Run.user_id, Run.problem_id)
     
     for row in query.all():
@@ -327,14 +327,17 @@ def room_results(room_id):
 
         user = dbsession.query(User).filter(User.id == run.user_id).first()
         if user.name in user_run_map:
-            user_run_map[user.name][problem_order_id] = {
+            user_run_map[user.name]['problem_list'].append(str(problem_order_id))
+            user_run_map[user.name][str(problem_order_id)] = {
                 'successful': run.successful,
                 'success_count': run.success_count,
                 'time_created': run.time_created.timestamp()
             }
         else:
+            user_run_map['user_list'].append(user.name)
             user_run_map[user.name] = {
-                problem_order_id: {
+                'problem_list': [str(problem_order_id)],
+                str(problem_order_id): {
                     'successful': run.successful,
                     'success_count': run.success_count,
                     'time_created': run.time_created.timestamp()
