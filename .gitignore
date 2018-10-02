@@ -2,3 +2,5 @@ app.db
 __pycache__
 *.pyc
 models/__pycache__
+*.sublime-project
+.vscode
