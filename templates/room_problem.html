@@ -45,9 +45,15 @@
 			} else {
 				resElement.innerHTML = `
 					<h3>${result.success_count} tests passed.</h3>
-					<p>First test<p>
-					<p>${result.output[0][1] ? "<span class=\"success\">Successful</span>" : "Unsuccessful"}</p>
-					<p>output: ${result.output[0][0]}</p>
+					<p>First test ${result.first.success ? "<span class=\"success\">Successful</span>" : "Unsuccessful"}</p>
+                    <p>
+                        Input:
+                        <pre>${result.first.input}</pre>
+                    </p>
+					<p>
+                        Output: 
+                        <pre>${result.first.output}</pre>
+                    </p>
 					`;
 			}
 		}

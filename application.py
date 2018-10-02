@@ -300,7 +300,18 @@ def run_results(run_id):
         run = dbsession.query(Run).filter(Run.file_id == run_id).first()
 
         if run.output:
-            return json.JSONEncoder().encode({ "output": run.output, "success_count": run.success_count, "full_success": run.successful })
+            output = json.JSONDecoder().decode(run.output)
+            return json.JSONEncoder().encode(
+                { 
+                    "first":  { 
+                        "output": output[0][0], 
+                        "input": run.problem.tests[0].input, 
+                        "success": output[0][1] 
+                    }, 
+                    "success_count": run.success_count, 
+                    "full_success": run.successful 
+                })
+
         return "0"
 
 
