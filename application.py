@@ -9,8 +9,7 @@ import json
 
 from time import sleep
 from flask import Flask, jsonify, flash, render_template, request, session, redirect, url_for, escape
-from flask_socketio import SocketIO
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
 
 from models.base import Base
@@ -54,7 +53,6 @@ DEFAULT_CODE = "import sys\n\n# print out first command line argument\nprint(sys
 app = Flask(__name__)
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
 app.secret_key = os.environ["FLASK_SECRET"]
-socketio = SocketIO(app)
 
 def generate_room_id(db):
     possible_string = ''
@@ -217,7 +215,11 @@ def room_problem(room_id, problem_order_id):
         dir_path = os.path.dirname(os.path.realpath(__file__)) + '/dangeroux'
 
         #create run in database
-        run = Run(file_id=file_id, problem_id=problem.id, code=request.form.get("code"))
+        run = Run(  file_id=file_id, 
+                    problem_id=problem.id,
+                    room_id=room.id,
+                    user_id=user.id,
+                    code=request.form.get("code"))
         dbsession.add(run)
 
         #copy tests into file
@@ -279,16 +281,6 @@ def run_results(run_id):
         os.remove("./dangeroux/" + run_id + ".py")
         os.remove("./dangeroux/" + run_id + ".testfile")
 
-        socketio.emit(  
-            'update_room', 
-            json.JSONEncoder().encode({
-                "user": run.user.name,
-                "success_count": run.success_count,
-                "full_success": run.successful
-            }),
-            room=run.room.id
-        )
-
         return "0"
     
     #GET
@@ -298,6 +290,59 @@ def run_results(run_id):
         if run.output:
             return json.JSONEncoder().encode({ "output": run.output, "success_count": run.success_count, "full_success": run.successful })
         return "0"
+
+
+# should be XHR only
+# get admin panel info here
+@app.route("/room_results/<string:room_id>")
+def room_results(room_id):
+    if not session or not session["user_id"]:
+        return "300 Forbidden"
+
+    user = dbsession.query(User).filter(User.id == session["user_id"]).first()
+    if not user:
+        session["user_id"] = None
+        return "300 Forbidden"
+
+    room = dbsession.query(Room).filter(Room.id == room_id).first()
+    if not room:
+        return "404 Not Found"
+
+    if not room.owner.id == user.id:
+        return "300 Forbidden"
+
+    # create a map of each user to their
+    # most recent runs for each problem
+    user_run_map = {}
+    query = dbsession.query(Run, func.max(Run.time_created)).filter(Run.room_id == room.id).group_by(Run.user_id, Run.problem_id)
+    
+    for row in query.all():
+        run = row[0]
+
+        problem_order_id = 0
+        for problem in run.room.problems:
+            if problem.problem_id == run.problem_id:
+                problem_order_id = problem.order_id
+                break
+
+        user = dbsession.query(User).filter(User.id == run.user_id).first()
+        if user.name in user_run_map:
+            user_run_map[user.name][problem_order_id] = {
+                'successful': run.successful,
+                'success_count': run.success_count,
+                'time_created': run.time_created.timestamp()
+            }
+        else:
+            user_run_map[user.name] = {
+                problem_order_id: {
+                    'successful': run.successful,
+                    'success_count': run.success_count,
+                    'time_created': run.time_created.timestamp()
+                }
+            }
+
+    return json.JSONEncoder().encode(user_run_map)
+
 
 
 @app.route("/problems", methods=["GET", "POST"])
@@ -473,37 +518,3 @@ def register():
         return redirect("/")
 
     return render_template("register.html")
-
-
-@socketio.on('join_room')
-def on_join(data):
-    db = DBSession()
-    user = db.query(User).filter(User.id == session['user_id']).first()
-    if not user:
-        return
-
-    room_id = data['room']
-    room = db.query(Room).filter(Room.id == room_id).first()
-    if not room:
-        return
-    
-    if not room.owner.id == user.id:
-        return
-
-    join_room(room_id)
-    send(username + ' has entered the room.', room=room)
-
-@socketio.on('leave_room')
-def on_leave(data):
-    db = DBSession()
-    user = db.query(User).filter(User.id == session['user_id']).first()
-    if not user:
-        return
-
-    room_id = data['room']
-    leave_room(room_id)
-    send(username + ' has left the room.', room=room)
-
-if __name__ == '__main__':
-    print("DOES THIS WORK??????????????????????????")
-    socketio.run(app)
