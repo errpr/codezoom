@@ -301,6 +301,8 @@ def run_results(run_id):
 
         if run.output:
             output = json.JSONDecoder().decode(run.output)
+            if not output.size:
+                output = [["", False]]
             return json.JSONEncoder().encode(
                 { 
                     "first":  { 

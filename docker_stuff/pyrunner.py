@@ -21,11 +21,17 @@ for line in test_file:
 
   line2 = line.split("\uFFFF")
   inpt = line2[0]
-  outpt = line2[1]
+  expected_output = line2[1]
 
   try:
     returned = subprocess.run(["python3", file_id + ".py", inpt], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5, check=True)
-    results.append([returned.stdout.decode('ascii').rstrip(), returned.stdout.decode('ascii').rstrip() == outpt])
+    output = returned.stdout
+    if output:
+      output = output.decode('ascii').rstrip()
+    else:
+      output = ""
+
+    results.append([output, output == expected_output])
 
   except subprocess.TimeoutExpired:
     results.append(["dnf", False])
