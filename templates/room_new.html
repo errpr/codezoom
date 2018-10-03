@@ -129,7 +129,7 @@
             data.append('problems', listOfProblems);
             data.append('password', document.getElementById('room-password').value)
 
-            req.open('POST', '/rooms', true);
+            req.open('POST', '/rooms/new', true);
             req.withCredentials = true;
             req.responseType = 'text';
             req.onload = function() {
