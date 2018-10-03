@@ -301,7 +301,7 @@ def run_results(run_id):
 
         if run.output:
             output = json.JSONDecoder().decode(run.output)
-            if not output.size:
+            if not output:
                 output = [["", False]]
             return json.JSONEncoder().encode(
                 { 
